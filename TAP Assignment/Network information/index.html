@@ -102,14 +102,11 @@
         <p><strong>Online:</strong> ${navigator.onLine ? "✅ Yes" : "❌ No"}</p>
       `;
 
-      // Adaptive background color based on speed
       document.body.className = type;
     }
 
-    // Initial load
+   
     updateNetworkInfo();
-
-    // Watch network changes (Connection API)
     const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
     if (conn) {
       conn.addEventListener("change", () => {
@@ -118,7 +115,6 @@
       });
     }
 
-    // Listen for offline/online events
     window.addEventListener("online", () => {
       updateNetworkInfo();
       showToast("✅ You are back online");
