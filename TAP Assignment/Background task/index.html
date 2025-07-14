@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title> Background Tasks Demo</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background: #f4f4f4;
+    }
+
+    button {
+      padding: 10px 16px;
+      font-size: 15px;
+      margin: 5px;
+      cursor: pointer;
+    }
+
+    #log {
+      max-height: 250px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      background: #fff;
+      padding: 10px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      margin-top: 10px;
+    }
+
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    progress {
+      width: 100%;
+      height: 20px;
+    }
+
+    canvas {
+      display: block;
+      margin-top: 20px;
+      background: #fff;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>🧠 Background Tasks vs Web Workers + CPU Monitor</h2>
+
+  <div id="controls">
+    <button onclick="startTasks()">▶️ Start Tasks</button>
+    <button onclick="cancelTasks()">⛔ Cancel</button>
+    <label><input type="checkbox" id="useWorker"> Use Web Worker</label>
+  </div>
+
+  <progress id="progressBar" value="0" max="100"></progress>
+  <div id="log"></div>
+  <canvas id="cpuChart" width="600" height="150"></canvas>
+
+  <script>
+    const logDiv = document.getElementById("log");
+    const progressBar = document.getElementById("progressBar");
+    const useWorkerToggle = document.getElementById("useWorker");
+    const chartCanvas = document.getElementById("cpuChart");
+    const ctx = chartCanvas.getContext("2d");
+
+    let taskCount = 0;
+    let totalTasks = 100;
+    let cancelled = false;
+    let cpuData = [];
+
+    const safeIdleCallback = window.requestIdleCallback || function(cb) {
+      return setTimeout(() => cb({ timeRemaining: () => 0 }), 1);
+    };
+
+    const workerBlob = new Blob([`
+      self.onmessage = function(e) {
+        const { total } = e.data;
+        for (let i = 1; i <= total; i++) {
+          const start = performance.now();
+          while (performance.now() - start < 5) {}
+          postMessage({ i });
+        }
+      };
+    `], { type: "application/javascript" });
+
+    const workerUrl = URL.createObjectURL(workerBlob);
+    let worker;
+
+    function log(msg) {
+      const div = document.createElement("div");
+      div.textContent = msg;
+      logDiv.prepend(div);
+    }
+
+    function startTasks() {
+      cancelTasks(); // Reset any previous
+      taskCount = 0;
+      cancelled = false;
+      progressBar.value = 0;
+      logDiv.innerHTML = "";
+
+      if (useWorkerToggle.checked) {
+        worker = new Worker(workerUrl);
+        worker.postMessage({ total: totalTasks });
+        worker.onmessage = (e) => {
+          taskCount = e.data.i;
+          progressBar.value = (taskCount / totalTasks) * 100;
+          log(`✅ (Worker) Task #${taskCount}`);
+          if (taskCount === totalTasks) worker.terminate();
+        };
+      } else {
+        for (let i = 0; i < totalTasks; i++) {
+          safeIdleCallback((idleDeadline) => {
+            if (cancelled) return;
+            const start = performance.now();
+            while (performance.now() - start < 5) {}
+            taskCount++;
+            progressBar.value = (taskCount / totalTasks) * 100;
+            log(`✅ Task #${taskCount} | timeRemaining=${idleDeadline.timeRemaining().toFixed(2)}ms`);
+            if (taskCount % 20 === 0) requestAnimationFrame(() => log(`🖼️ UI updated after ${taskCount} tasks`));
+          }, { timeout: 100 });
+        }
+      }
+    }
+
+    function cancelTasks() {
+      cancelled = true;
+      if (worker) worker.terminate();
+      log("⛔ Tasks cancelled/reset.");
+      taskCount = 0;
+      progressBar.value = 0;
+    }
+
+    // CPU Chart logic (simulated using JS timing)
+    setInterval(() => {
+      const now = performance.now();
+      const load = Math.random() * 60 + (taskCount > 0 ? 30 : 0); // Simulated CPU load
+      if (cpuData.length > 60) cpuData.shift();
+      cpuData.push(load);
+      drawChart();
+    }, 500);
+
+    function drawChart() {
+      ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+      ctx.beginPath();
+      ctx.moveTo(0, 150 - cpuData[0]);
+      for (let i = 1; i < cpuData.length; i++) {
+        ctx.lineTo(i * 10, 150 - cpuData[i]);
+      }
+      ctx.strokeStyle = "green";
+      ctx.stroke();
+      ctx.fillText("📊 CPU Load (Simulated)", 10, 10);
+    }
+  </script>
+
+</body>
+</html>

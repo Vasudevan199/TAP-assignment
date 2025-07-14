@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Network Monitor</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #eef2f7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      transition: background-color 0.3s ease;
+    }
+
+    .card {
+      background: white;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-size: 1.5em;
+      color: #333;
+    }
+
+    #networkInfo p {
+      margin: 8px 0;
+      font-size: 1.1em;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 6px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    body.slow-2g { background-color: #ffcccc; }
+    body['2g']    { background-color: #ffddcc; }
+    body['3g']    { background-color: #ffffcc; }
+    body['4g']    { background-color: #ccffcc; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h1>📡 Network Monitor</h1>
+    <div id="networkInfo">Loading network info...</div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const infoDiv = document.getElementById("networkInfo");
+    const toast = document.getElementById("toast");
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 3000);
+    }
+
+    function updateNetworkInfo() {
+      const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+
+      if (!conn) {
+        infoDiv.innerHTML = `<p>Network Information API is not supported.</p>`;
+        return;
+      }
+
+      const type = conn.effectiveType || "unknown";
+      const downlink = conn.downlink || "N/A";
+      const rtt = conn.rtt || "N/A";
+      const saveData = conn.saveData ? "Yes" : "No";
+
+      infoDiv.innerHTML = `
+        <p><strong>Connection Type:</strong> ${type}</p>
+        <p><strong>Downlink:</strong> ${downlink} Mbps</p>
+        <p><strong>Latency (RTT):</strong> ${rtt} ms</p>
+        <p><strong>Data Saver:</strong> ${saveData}</p>
+        <p><strong>Online:</strong> ${navigator.onLine ? "✅ Yes" : "❌ No"}</p>
+      `;
+
+      // Adaptive background color based on speed
+      document.body.className = type;
+    }
+
+    // Initial load
+    updateNetworkInfo();
+
+    // Watch network changes (Connection API)
+    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (conn) {
+      conn.addEventListener("change", () => {
+        updateNetworkInfo();
+        showToast(`📶 Network changed to: ${conn.effectiveType}`);
+      });
+    }
+
+    // Listen for offline/online events
+    window.addEventListener("online", () => {
+      updateNetworkInfo();
+      showToast("✅ You are back online");
+    });
+
+    window.addEventListener("offline", () => {
+      updateNetworkInfo();
+      showToast("🚫 You are offline");
+    });
+  </script>
+
+</body>
+</html>

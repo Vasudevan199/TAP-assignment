@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Canvas Drawing Assignment</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #f4f4f4;
+    }
+
+    h1 {
+      margin: 20px 0 10px;
+    }
+
+    #canvas {
+      border: 1px solid #333;
+      background: #fff;
+      cursor: crosshair;
+    }
+
+    .controls {
+      margin: 10px 0;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .controls > * {
+      padding: 8px;
+      font-size: 14px;
+    }
+
+    .controls select,
+    .controls input[type="color"],
+    .controls input[type="range"] {
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🖌️ Canvas Drawing Tool</h1>
+
+  <div class="controls">
+    <label>Tool:
+      <select id="tool">
+        <option value="pen">Pen</option>
+        <option value="rect">Rectangle</option>
+        <option value="circle">Circle</option>
+      </select>
+    </label>
+
+    <label>Color: <input type="color" id="color" value="#000000"></label>
+    <label>Size: <input type="range" id="size" min="1" max="20" value="5"></label>
+    <button onclick="clearCanvas()">🧼 Clear</button>
+  </div>
+
+  <canvas id="canvas" width="800" height="500"></canvas>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    let drawing = false;
+    let startX, startY;
+
+    const tool = document.getElementById("tool");
+    const color = document.getElementById("color");
+    const size = document.getElementById("size");
+
+    // Event listeners for mouse
+    canvas.addEventListener("mousedown", (e) => {
+      drawing = true;
+      startX = e.offsetX;
+      startY = e.offsetY;
+
+      if (tool.value === "pen") {
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+      }
+    });
+
+    canvas.addEventListener("mousemove", (e) => {
+      if (!drawing) return;
+
+      ctx.strokeStyle = color.value;
+      ctx.lineWidth = size.value;
+      ctx.fillStyle = color.value;
+
+      const currentX = e.offsetX;
+      const currentY = e.offsetY;
+
+      if (tool.value === "pen") {
+        ctx.lineTo(currentX, currentY);
+        ctx.stroke();
+      }
+    });
+
+    canvas.addEventListener("mouseup", (e) => {
+      drawing = false;
+      const endX = e.offsetX;
+      const endY = e.offsetY;
+
+      if (tool.value === "rect") {
+        const width = endX - startX;
+        const height = endY - startY;
+        ctx.fillStyle = color.value;
+        ctx.fillRect(startX, startY, width, height);
+      }
+
+      if (tool.value === "circle") {
+        const radius = Math.sqrt(
+          Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2)
+        );
+        ctx.beginPath();
+        ctx.arc(startX, startY, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.beginPath(); // reset path
+    });
+
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  </script>
+
+</body>
+</html>
