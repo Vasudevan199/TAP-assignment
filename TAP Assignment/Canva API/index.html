@@ -88,7 +88,7 @@
     const color = document.getElementById("color");
     const size = document.getElementById("size");
 
-    // Event listeners for mouse
+    
     canvas.addEventListener("mousedown", (e) => {
       drawing = true;
       startX = e.offsetX;
@@ -137,7 +137,7 @@
         ctx.fill();
       }
 
-      ctx.beginPath(); // reset path
+      ctx.beginPath(); 
     });
 
     function clearCanvas() {
