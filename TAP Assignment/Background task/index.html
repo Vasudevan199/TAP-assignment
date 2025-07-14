@@ -99,7 +99,7 @@
     }
 
     function startTasks() {
-      cancelTasks(); // Reset any previous
+      cancelTasks(); 
       taskCount = 0;
       cancelled = false;
       progressBar.value = 0;
@@ -137,10 +137,10 @@
       progressBar.value = 0;
     }
 
-    // CPU Chart logic (simulated using JS timing)
+    
     setInterval(() => {
       const now = performance.now();
-      const load = Math.random() * 60 + (taskCount > 0 ? 30 : 0); // Simulated CPU load
+      const load = Math.random() * 60 + (taskCount > 0 ? 30 : 0); 
       if (cpuData.length > 60) cpuData.shift();
       cpuData.push(load);
       drawChart();
